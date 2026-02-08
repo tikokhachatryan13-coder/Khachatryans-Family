@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Khachatryan's family</title>
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  color:white;
+  overflow-x:hidden;
+}
+.bg{
+  position:fixed;
+  inset:0;
+  background:url("https://images.unsplash.com/photo-1504674900247-0877df9cc836");
+  background-size:cover;
+  filter:brightness(0.35);
+  z-index:-2;
+}
+.floatingFood{
+  position:absolute;
+  width:100px;
+  height:100px;
+  border-radius:50%;
+  animation:floatAnim linear infinite;
+  z-index:-1;
+}
+@keyframes floatAnim{
+  0%{transform:translateY(0) rotate(0deg);}
+  50%{transform:translateY(-30px) rotate(180deg);}
+  100%{transform:translateY(0) rotate(360deg);}
+}
+.box{
+  background:rgba(0,0,0,0.75);
+  margin:20px auto;
+  padding:20px;
+  max-width:1200px;
+  border-radius:20px;
+  text-align:center;
+}
+button{
+  padding:12px;
+  margin:6px;
+  font-size:16px;
+  border:none;
+  border-radius:12px;
+  cursor:pointer;
+}
+.cat-btn{width:200px;height:120px;font-size:18px;}
+.foods{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:16px;
+}
+.food{
+  background:rgba(255,255,255,0.1);
+  padding:10px;
+  border-radius:14px;
+  position:relative;
+}
+.food img{width:100%;border-radius:12px;height:140px;object-fit:cover;}
+.addBtn{background:#22c55e;color:white;width:100%;margin-top:8px;}
+.cartBtn{
+  position:fixed;
+  right:20px;
+  bottom:20px;
+  background:#3b82f6;
+  font-size:22px;
+  padding:12px;
+  border-radius:50%;
+}
+.receipt{
+  text-align:left;
+  background:rgba(0,0,0,0.85);
+  padding:20px;
+  border-radius:16px;
+  max-width:400px;
+  margin:20px auto;
+}
+@media(max-width:768px){
+  .cat-btn{width:45%; margin:4px;}
+  .foods{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div id="floatingContainer"></div>
+
+<!-- CATEGORIES -->
+<div class="box" id="catBox">
+  <h2>Ընտրեք կատեգորիան</h2>
+  <button class="cat-btn" id="breakfastBtn">🍳 Նախաճաշ</button>
+  <button class="cat-btn" id="lunchBtn">🍲 Ճաշ</button>
+  <button class="cat-btn" id="dinnerBtn">🍽 Ընթրիք</button>
+  <button class="cat-btn" id="dessertBtn">🍰 Աղանդներ</button>
+  <button class="cat-btn" id="drinksBtn">🍹 Խմիչքներ</button>
+</div>
+
+<!-- MENU -->
+<div class="box" id="menuBox" style="display:none;">
+  <h2 id="menuTitle"></h2>
+  <div class="foods" id="foods"></div>
+  <button id="backBtn">⬅ Հետ գնալ</button>
+</div>
+
+<!-- CART -->
+<div class="box" id="cartBox" style="display:none;">
+  <h2>🛒 Զամբյուղ</h2>
+  <div id="cartItems"></div>
+  <h3 id="total">Ընդհանուր: ֏0</h3>
+  <button id="checkoutBtn" class="addBtn">Գնել</button>
+  <button id="deliverBtn" class="addBtn">🚚 Գնել + Առաքել</button>
+  <button id="clearBtn" class="addBtn">Ջնջել զամբյուղը</button>
+</div>
+
+<!-- RECEIPT -->
+<div class="box" id="receiptBox" style="display:none;">
+  <h2>✅ Չեկ</h2>
+  <div id="receiptContent" class="receipt"></div>
+  <button id="finalCheckoutBtn" class="addBtn">Գնել վերջնական</button>
+  <button id="closeReceiptBtn" class="addBtn">Փակել</button>
+</div>
+
+<button class="cartBtn" id="cartBtn">🛒</button>
+
+<script>
+// Variables
+let cart=[], sum=0;
+
+// Full menu
+const menu={
+breakfast:[
+ {n:"Խաշ",p:2500,desc:"Նախաճաշ",img:"https://i.ytimg.com/vi/p1NGcP3o60E/hq720.jpg"},
+ {n:"ձվածեղ լոլիկով",p:1000,desc:"Նախաճաշ",img:"https://buy.am/media/image/86/97/5e/D42A4586k.jpg"},
+ {n:"Բաստուրմայով ձվածեղ",p:1300,desc:"Նախաճաշ",img:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSzbBtyowyOaWRXpvfuGMtv8zDVDhP32xtxlQ&s"},
+ {n:"Սուջուխով ձվածեղ",p:1200,desc:"Նախաճաշ",img:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTIcgO-WhRxLWBeSljSikDwhtCWRpue5JpTPmU_bwUCMGjEpMgBA8HViAnl8pOH"},
+ {n:"Կանաչիով ձվածեղ",p:1350,desc:"Նախաճաշ",img:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRZGn9NUzexkTAGZnPsWgKE33HEo5w7zhXy0Q&s"},
+ {n:"Մեղր և կարագ",p:500,desc:"Նախաճաշ",img:"https://www.aravot.am/wp-content/uploads/2016/11/toqaborb8.-1.jpg"},
+ {n:"Բրդուճ",p:750,desc:"Նախաճաշ",img:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuhe-_lrbMA4AIP0H4guiALxqjP4i-x_NjXw&s"},
+],
+lunch:[
+ {n:"Ավելուկով ճաշ",p:1500,desc:"Ճաշ",img:"https://i.ytimg.com/vi/iIcdvlMpflM/maxresdefault.jpg"},
+ {n:"Հարիսա",p:1500,desc:"Ճաշ",img:"https://gatapandok.am/wp-content/uploads/2023/06/safeimagekit-resized-img-3.png"},
+ {n:"Խաղողի տերևով տոլմա",p:2200,desc:"Ճաշ",img:"https://www.utours.am/webroot/myfiles/images/slider/t10.jpg"},
+ {n:"Ժենգյալով հաց",p:800,desc:"Ճաշ",img:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRdER2BrK6uuyI7RJEubG_dw6o5rJfcy86A-w&s"},
+ {n:"Սպաս",p:1000,desc:"Ճաշ",img:"https://www.intempo.am/files/resized/products/_1.1800x1800w.jpg"},
+ {n:"Լահմաջո",p:550,desc:"Ճաշ",img:"https://i.ytimg.com/vi/3CrChvF4uo8/maxresdefault.jpg"},
+],
+dinner:[
+ {n:"Խորոված գառի",p:4500,desc:"Գառի միս",img:"https://images.unsplash.com/photo-1553621042-f6e147245754"},
+ {n:"Խորոված",p:4500,desc:" Խոզի միս",img:"https://grillexpress.am/wp-content/uploads/2020/08/Tandoor-Barbecue-Pork-Ribs-.jpg"},
+ {n:"Քաբաբ",p:1500,desc:"Տավարի միս",img:"https://dzknik.agroup.am/wp-content/uploads/2024/03/Beef-kebab-Partez-Food-Court.jpg"},
+ {n:"Ղափամա", p:5800, desc:"Դդմով փլավ", img:"https://upload.wikimedia.org/wikipedia/commons/9/9b/Ghapama.jpg"},
+ {n:"Խաշլամա", p:4200, desc:"Գառան մսով", img:"https://i.ytimg.com/vi/jKxwl4grr9s/maxresdefault.jpg"},
+ {n:"Սպաս ", p:2800, desc:"Տաք ապուր", img:"https://armlur.am/wp-content/uploads/2016/05/spas.jpg"},
+ {n:"Քյուֆթա", p:3900, desc:"Ծեծած միս", img:"https://168.am/wp-content/uploads/2023/03/kufta-in-armenian-1.jpg"},
+ {n:"Իշլի Քյուֆթա", p:3700, desc:"Մսամթերք", img:"data:image/jpeg;base64,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"}
+],
+dessert:[
+ {n:"Գաթա",p:950,desc:"Քաղցրավենիք",img:"https://gatapandok.am/wp-content/uploads/2024/05/traditional-armenian-gata.jpg"},
+ {n:"Փախլավա",p:850,desc:"Քաղցրավենիք",img:"https://i.ytimg.com/vi/J4AqcCMBENk/maxresdefault.jpg"},
+ {n:"Շարոց",p:1000,desc:"Քաղցրավենիք",img:"https://anigrigoryan3design.wordpress.com/wp-content/uploads/2020/11/imageedit_67_54461552696824833720460511934.jpg?w=863"},
+ {n:"Ալանի",p:900,desc:"Քաղցրավենիք",img:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR4SyYDrmtTj-0eTBSmoI30V4aBjat-MeoJqQ&s"},
+ {n:"Հալվա",p:650,desc:"Քաղցրավենիք",img:"https://168.am/wp-content/uploads/2022/06/halva.jpg"},
+ {n:"Մատնաքաշ",p:200,desc:"Հացատեսակ",img:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQUK8LVqU_olU_DBYn9Z_0hhiHnhaXbSia3tw&s"},
+ {n:"Փոխինձ",p:950,desc:"Քաղցրավենիք",img:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTd21QftqrFPf3MKR5uPj6bY8F0v4sOa2MQqg&s"},
+ {n:"Ծիրանի չիր",p:1100,desc:"Քաղցրավենիք",img:"https://i.ytimg.com/vi/STsxrXhj71U/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLAIKRah2rcuSPxa2b3KjSV1QoNoFg"},
+ {n:"Հայկական լավաշ",p:230,desc:"Հացատեսակ",img:"https://ararateu.com/cdn/shop/files/lawasz_zamow_online_polska.webp?v=1760346812&width=480"}
+],
+drinks:[
+ {n:"Հայկական թեյ",p:200,desc:"Թեյ",img:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS5fYpaezNNoWHzROGSau1CT3h4KsAlSYAyJg&s"},
+ {n:"Կոլա",p:350,desc:"Հյութ",img:"https://images.unsplash.com/photo-1622483767028-3f66f32aef97"},
+ {n:"Ջուր",p:150,desc:"Խմիչք",img:"https://upload.wikimedia.org/wikipedia/commons/0/02/Stilles_Mineralwasser.jpg"},
+ {n:"Ջերմուկ/Բջնի",p:200,desc:"Խմիչք",img:"https://grillexpress.am/wp-content/uploads/2020/08/Drinks-Bjrni-0.5l-Jermuk-0.5L-1l.jpg"},
+ {n:"Ֆանտա",p:350,desc:"Հյութ",img:"https://media.istockphoto.com/id/493952763/photo/can-of-fanta-orange.jpg?s=612x612&w=0&k=20&c=NcwCzRXwfB5jghmlAMDW-I26pNVa6UKtwuCfeJk5YEo="},
+ {n:"Սպրայտ",p:350,desc:"Հյութ",img:"https://www.shutterstock.com/image-photo/poznan-pol-apr-02-2025-260nw-2609175503.jpg"},
+ {n:"Պեպսի",p:350,desc:"Հյութ",img:"https://tafseer-dreams.com/wp-content/uploads/2022/02/%D8%A7%D9%84%D8%A8%D9%8A%D8%A8%D8%B3%D9%8A-%D9%81%D9%8A-%D8%A7%D9%84%D9%85%D9%86%D8%A7%D9%85.jpg"},
+ {n:"Կոնյակ",p:11000,desc:"ալկոհոլային",img:"https://d23etkghwwc7sj.cloudfront.net/uploads/sightseeing/images/67bc59ab05871-ararat2.webp"},
+ {n:"Օղի",p:8000,desc:"ալկոհոլային",img:"https://vedi-alco.am/uploads/2018/08/apricot-vodka-large-bottle.jpg"},
+ {n:"Խաղողի գինի",p:9500,desc:"ալկոհոլային",img:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQkvJp841ZQ0QtlRzTh6JhnJWX5EAjUEIGUrw&s"},
+ {n:"Թան",p:400,desc:"Զովացուցիչ",img:"https://gatapandok.am/wp-content/uploads/2024/10/tan-armenian-yogurt-drink.png"}
+]
+};
+
+// Functions
+function openMenu(type){
+  document.getElementById("catBox").style.display="none";
+  document.getElementById("menuBox").style.display="block";
+  document.getElementById("menuTitle").innerText=type;
+  let foodsDiv=document.getElementById("foods");
+  foodsDiv.innerHTML="";
+  menu[type].forEach(f=>{
+    const div=document.createElement("div");
+    div.className="food";
+    div.innerHTML=`<img src="${f.img}"><h3>${f.n}</h3><p>${f.desc}</p><b>֏${f.p}</b>`;
+    const btn=document.createElement("button");
+    btn.className="addBtn";
+    btn.innerText="+ Զամբյուղ";
+    btn.addEventListener("click",()=>addToCart(f,btn));
+    div.appendChild(btn);
+    foodsDiv.appendChild(div);
+  });
+}
+
+function addToCart(item, btn){
+  let existing=cart.find(c=>c.n===item.n);
+  if(existing) existing.qty++;
+  else { item.qty=1; cart.push(item); }
+  sum+=item.p;
+  renderCart();
+  btn.style.transform = "scale(1.2)";
+  btn.style.transition = "transform 0.2s";
+  setTimeout(()=>{ btn.style.transform = "scale(1)"; },200);
+}
+
+function renderCart(){
+  const c=document.getElementById("cartItems");
+  c.innerHTML="";
+  cart.forEach((i,index)=>{
+    c.innerHTML+=`<p>${i.n} - ֏${i.p} x ${i.qty} 
+      <button onclick="removeItem(${index})">❌</button> 
+      <button onclick="addQty(${index})">➕</button></p>`;
+  });
+  document.getElementById("total").innerText="Ընդհանուր: ֏"+sum;
+}
+
+function removeItem(index){
+  sum-=cart[index].p*cart[index].qty;
+  cart.splice(index,1);
+  renderCart();
+}
+function addQty(index){
+  cart[index].qty++;
+  sum+=cart[index].p;
+  renderCart();
+}
+function toggleCart(){
+  const cb=document.getElementById("cartBox");
+  cb.style.display=cb.style.display==="none"?"block":"none";
+}
+function clearCart(){cart=[]; sum=0; renderCart();}
+function checkout(){
+  renderReceipt();
+  cart=[]; sum=0; renderCart();
+  document.getElementById("cartBox").style.display="none";
+}
+function deliverCart(){
+  sum+=750;
+  renderCart();
+  alert("🚚 750֏ ավելացվեց ընդհանուր գումարին!");
+}
+
+function renderReceipt(){
+  const rc=document.getElementById("receiptContent");
+  rc.innerHTML="";
+  cart.forEach(i=>{
+    rc.innerHTML+=`<p>${i.n} - ֏${i.p} x ${i.qty}</p>`;
+  });
+  rc.innerHTML+="<hr><b>Ընդհանուր: ֏"+sum+"</b>";
+  document.getElementById("receiptBox").style.display="block";
+}
+
+// Event listeners
+document.getElementById("cartBtn").addEventListener("click",toggleCart);
+document.getElementById("backBtn").addEventListener("click",()=>{
+  document.getElementById("menuBox").style.display="none"; 
+  document.getElementById("catBox").style.display="block";
+});
+document.getElementById("checkoutBtn").addEventListener("click",checkout);
+document.getElementById("deliverBtn").addEventListener("click",deliverCart);
+document.getElementById("clearBtn").addEventListener("click",clearCart);
+document.getElementById("closeReceiptBtn").addEventListener("click",()=>{document.getElementById("receiptBox").style.display="none";});
+document.getElementById("finalCheckoutBtn").addEventListener("click",()=>{
+  alert("Խնդիր ձեռք բերվեց, ընդհանուր գումար՝ ֏"+sum);
+});
+
+// Category buttons
+document.getElementById("breakfastBtn").addEventListener("click",()=>openMenu("breakfast"));
+document.getElementById("lunchBtn").addEventListener("click",()=>openMenu("lunch"));
+document.getElementById("dinnerBtn").addEventListener("click",()=>openMenu("dinner"));
+document.getElementById("dessertBtn").addEventListener("click",()=>openMenu("dessert"));
+document.getElementById("drinksBtn").addEventListener("click",()=>openMenu("drinks"));
+
+// Floating images
+function startFloating(){
+  const container=document.getElementById("floatingContainer");
+  container.innerHTML="";
+  const allImgs=[];
+  Object.keys(menu).forEach(k=>menu[k].forEach(i=>{if(i.img) allImgs.push(i.img)}));
+  for(let i=0;i<20;i++){
+    const img=document.createElement("img");
+    img.src=allImgs[i%allImgs.length];
+    img.className="floatingFood";
+    img.style.left=Math.random()*90+"%";
+    img.style.top=Math.random()*90+"%";
+    img.style.animationDuration=(5+Math.random()*5)+"s";
+    container.appendChild(img);
+  }
+}
+startFloating();
+
+let currentFloatingIndex = 0;
+const floatingImages = [];
+Object.keys(menu).forEach(k=>menu[k].forEach(f=>floatingImages.push(f.img)));
+setInterval(()=>{
+  const imgs = document.querySelectorAll(".floatingFood");
+  imgs.forEach(img => { img.style.transition = "opacity 1s"; img.style.opacity = 0; });
+  setTimeout(()=>{
+    imgs.forEach(img => { img.src = floatingImages[currentFloatingIndex]; img.style.opacity = 1; });
+    currentFloatingIndex = (currentFloatingIndex + 1) % floatingImages.length;
+  },1000);
+},7000);
+
+</script>
+</body>
+</html>
